@@ -137,7 +137,7 @@ _(Agrega aquí imágenes o GIFs mostrando el flujo de login, creación y listado
    ```
 2. Entrar al proyecto:
    ```bash
-   cd flutter-evaluacion3
+   cd EvaluacionOIT3
    ```
 3. Instalar dependencias:
    ```bash
