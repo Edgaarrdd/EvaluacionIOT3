@@ -139,19 +139,6 @@ lib/
 
 ---
 
-## 🧾 Evaluación (rúbrica resumida)
-| Criterio | Descripción | Puntaje Máx |
-|-----------|--------------|-------------|
-| Login (UI) | Campos, botones, diseño y accesibilidad | 7 |
-| Validaciones | Correo, contraseña, mensajes de error | 7 |
-| Navegación | Flujo correcto post-login | 7 |
-| Render de lista | Layout y adaptabilidad | 7 |
-| Estados derivados | Cálculo y visualización clara | 7 |
-| Creación / Eliminación | Persistencia y feedback correcto | 7 |
-| Interacción con BD | CRUD completo y sincronización con Firestore | 7 |
-
----
-
 ## 🧩 Buenas prácticas aplicadas
 - Código limpio, modular y comentado.  
 - Separación lógica por capas (`screens`, `models`, `services`).  
