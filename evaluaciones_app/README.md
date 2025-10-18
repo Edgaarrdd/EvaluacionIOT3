@@ -71,12 +71,13 @@ La app permite **iniciar sesión con credenciales reales**, y tras una validaci�
 lib/
 │
 ├── main.dart
+├── models/
+│   └── evaluacion.dart
+│   └── enums.dart
+│
 ├── screens/
 │   ├── login_screen.dart
 │   └── evaluaciones_screen.dart
-│
-├── models/
-│   └── evaluacion.dart
 │
 ├── services/
 │   ├── firebase_service.dart
@@ -85,7 +86,7 @@ lib/
 └── widgets/
     ├── evaluacion_item.dart
     ├── filtros_chips.dart
-    └── nueva_evaluacion_form.dart
+    └── evalacin_form_dialog.dart
 ```
 
 ---
