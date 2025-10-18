@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer' as developer;
+
 import '../models/evaluacion.dart';
+import '../models/enums.dart';
 import '../widgets/evaluacion_form_dialog.dart';
 import '../widgets/evaluacion_item.dart';
 import '../widgets/filtros_chips.dart';
 
+// pantalla principal de evaluaciones
 class EvaluacionesScreen extends StatefulWidget {
   const EvaluacionesScreen({super.key});
 
@@ -11,20 +17,56 @@ class EvaluacionesScreen extends StatefulWidget {
   _EvaluacionesScreenState createState() => _EvaluacionesScreenState();
 }
 
-// Tipo de filtro para las evaluaciones
 class _EvaluacionesScreenState extends State<EvaluacionesScreen> {
-  List<Evaluacion> evaluaciones = Evaluacion.getInitialEvaluations();
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
   String searchQuery = '';
   FilterType filterType = FilterType.all;
 
-  List<Evaluacion> getFilteredEvaluations() {
-    var filtered = evaluaciones.where((eval) {
+  @override
+  void initState() {
+    super.initState();
+    _initializeInitialEvaluations();
+  }
+
+// inicializar evaluaciones iniciales si no existen
+  Future<void> _initializeInitialEvaluations() async {
+    final userId = _auth.currentUser!.uid;
+    final snapshot = await _firestore.collection('evaluaciones').where('userId', isEqualTo: userId).limit(1).get();
+
+    if (snapshot.docs.isEmpty) {
+      developer.log('Agregando evaluaciones iniciales para userId: $userId');
+      final initialEvals = Evaluacion.getInitialEvaluations(userId);
+      for (var eval in initialEvals) {
+        await _firestore.collection('evaluaciones').add(eval.toFirestore());
+        developer.log('Agregada inicial: ${eval.title}');
+      }
+    } else {
+      developer.log('Ya existen evaluaciones para userId: $userId');
+    }
+  }
+
+// obtener stream de evaluaciones del usuario
+  Stream<QuerySnapshot> _getEvaluationsStream() {
+    final userId = _auth.currentUser!.uid;
+    developer.log('Cargando stream para userId: $userId');
+    return _firestore.collection('evaluaciones').where('userId', isEqualTo: userId).snapshots();
+  }
+
+// filtrar evaluaciones según búsqueda y filtro seleccionado
+  List<Evaluacion> _filterEvaluations(List<Evaluacion> evals) {
+    developer.log('Filtrando ${evals.length} evaluaciones con query: $searchQuery y filter: $filterType');
+    var filtered = evals.where((eval) {
       final matchesSearch = eval.title.toLowerCase().contains(searchQuery.toLowerCase()) || (eval.notes?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false);
       if (!matchesSearch) return false;
 
       final now = DateTime.now();
-      final isPending = !eval.isDone && (eval.dueDate == null || eval.dueDate!.isAfter(now));
+      final dueDate = eval.dueDate?.toDate();
+      final isPending = !eval.isDone && (dueDate == null || dueDate.isAfter(now));
       final isCompleted = eval.isDone;
+      final isOverdue = !eval.isDone && dueDate != null && dueDate.isBefore(now); // Para log
+
+      developer.log('Evaluación ${eval.title}: pending=$isPending, completed=$isCompleted, overdue=$isOverdue');
 
       switch (filterType) {
         case FilterType.all:
@@ -35,69 +77,37 @@ class _EvaluacionesScreenState extends State<EvaluacionesScreen> {
           return isCompleted;
       }
     }).toList();
-// Ordenar por fecha de entrega (dueDate), las sin fecha al final
+
     filtered.sort((a, b) {
-      if (a.dueDate == null && b.dueDate == null) return 0;
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
-      return a.dueDate!.compareTo(b.dueDate!);
+      final aDate = a.dueDate?.toDate();
+      final bDate = b.dueDate?.toDate();
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
     });
 
+    developer.log('Evaluaciones filtradas: ${filtered.length}');
     return filtered;
   }
 
-  int _findOriginalIndex(Evaluacion eval) {
-    return evaluaciones.indexWhere((e) => e.id == eval.id);
+  Future<void> _addEvaluacion(Evaluacion evaluacion) async {
+    developer.log('Agregando evaluación: ${evaluacion.title}, dueDate: ${evaluacion.dueDate}');
+    await _firestore.collection('evaluaciones').add(evaluacion.toFirestore());
   }
 
-  void _addEvaluacion(Evaluacion evaluacion) {
-    setState(() {
-      evaluaciones.add(evaluacion);
+  Future<void> _toggleDone(String id, bool currentDone) async {
+    await _firestore.collection('evaluaciones').doc(id).update({
+      'isDone': !currentDone
     });
   }
 
-  // Toggle el estado de completado de una evaluación
-  void _toggleDone(int filteredIndex) {
-    final filteredEvaluations = getFilteredEvaluations();
-    final eval = filteredEvaluations[filteredIndex];
-    final originalIndex = _findOriginalIndex(eval);
-    if (originalIndex != -1) {
-      setState(() {
-        evaluaciones[originalIndex].isDone = !evaluaciones[originalIndex].isDone;
-      });
-    }
-  }
-
-  // Eliminar evaluación con opción de deshacer
-  void _deleteEvaluacion(int filteredIndex) {
-    final filteredEvaluations = getFilteredEvaluations();
-    final eval = filteredEvaluations[filteredIndex];
-    final originalIndex = _findOriginalIndex(eval);
-    if (originalIndex != -1) {
-      final removedEval = evaluaciones[originalIndex];
-      setState(() {
-        evaluaciones.removeAt(originalIndex);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Evaluación eliminada'),
-          action: SnackBarAction(
-            label: 'Deshacer',
-            onPressed: () {
-              setState(() {
-                evaluaciones.insert(originalIndex, removedEval);
-              });
-            },
-          ),
-        ),
-      );
-    }
+  Future<void> _deleteEvaluacion(String id) async {
+    await _firestore.collection('evaluaciones').doc(id).delete();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredEvaluations = getFilteredEvaluations();
-    // Usar Scaffold para la estructura básica de la pantalla
     return Scaffold(
       appBar: AppBar(
         title: const Text('Evaluaciones'),
@@ -114,7 +124,6 @@ class _EvaluacionesScreenState extends State<EvaluacionesScreen> {
         ],
       ),
       body: Column(
-        // Usar Column para organizar los widgets verticalmente
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -140,15 +149,33 @@ class _EvaluacionesScreenState extends State<EvaluacionesScreen> {
             },
           ),
           Expanded(
-            // Asegura que el ListView use el espacio restante
-            child: ListView.builder(
-              itemCount: filteredEvaluations.length,
-              itemBuilder: (context, index) {
-                return EvaluacionItem(
-                  // Usa el índice del ListView.builder
-                  evaluacion: filteredEvaluations[index],
-                  onToggleDone: () => _toggleDone(index),
-                  onDismissed: () => _deleteEvaluacion(index),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _getEvaluationsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  developer.log('Error en StreamBuilder: ${snapshot.error}');
+                  return const Center(child: Text('Error al cargar evaluaciones'));
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final evals = snapshot.data!.docs.map((doc) {
+                  return Evaluacion.fromFirestore(doc.data() as Map<String, dynamic>, doc.id);
+                }).toList();
+
+                final filteredEvaluations = _filterEvaluations(evals);
+
+                return ListView.builder(
+                  itemCount: filteredEvaluations.length,
+                  itemBuilder: (context, index) {
+                    final eval = filteredEvaluations[index];
+                    return EvaluacionItem(
+                      evaluacion: eval,
+                      onToggleDone: () => _toggleDone(eval.id, eval.isDone),
+                      onDismissed: () => _deleteEvaluacion(eval.id),
+                    );
+                  },
                 );
               },
             ),

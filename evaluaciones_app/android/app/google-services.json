@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "176923857945",
+    "project_id": "evaluaciones-app-8dc23",
+    "storage_bucket": "evaluaciones-app-8dc23.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176923857945:android:6d799aa7a1e387a20b0688",
+        "android_client_info": {
+          "package_name": "com.example.evaluaciones_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnrAyqtGQgk8TUw0UNLjnco8GDP1bD4so"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

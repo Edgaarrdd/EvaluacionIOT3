@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/evaluacion.dart';
 
-// Widget para mostrar una evaluación con animaciones
 class EvaluacionItem extends StatelessWidget {
   final Evaluacion evaluacion;
   final void Function() onToggleDone;
@@ -13,11 +12,11 @@ class EvaluacionItem extends StatelessWidget {
     required this.onToggleDone,
     required this.onDismissed,
   });
-// Construir el widget con animaciones
+// widget para mostrar un ítem de evaluación
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final isOverdue = !evaluacion.isDone && evaluacion.dueDate != null && evaluacion.dueDate!.isBefore(now);
+    final isOverdue = !evaluacion.isDone && evaluacion.dueDate != null && evaluacion.dueDate!.toDate().isBefore(now);
     final isCompleted = evaluacion.isDone;
 
     return AnimatedContainer(
@@ -30,7 +29,7 @@ class EvaluacionItem extends StatelessWidget {
         color: isCompleted ? Colors.grey.shade100 : (isOverdue ? Colors.red.shade50 : Colors.white),
       ),
       child: Dismissible(
-        key: Key(evaluacion.id.toString()),
+        key: Key(evaluacion.id),
         direction: DismissDirection.endToStart,
         onDismissed: (direction) => onDismissed(),
         background: Container(
@@ -50,7 +49,7 @@ class EvaluacionItem extends StatelessWidget {
           ),
           subtitle: evaluacion.notes != null || evaluacion.dueDate != null
               ? Text(
-                  '${evaluacion.notes ?? ''}${evaluacion.notes != null && evaluacion.dueDate != null ? ' - ' : ''}${evaluacion.dueDate != null ? evaluacion.dueDate.toString().substring(0, 10) : ''}',
+                  '${evaluacion.notes ?? ''}${evaluacion.notes != null && evaluacion.dueDate != null ? ' - ' : ''}${evaluacion.dueDate != null ? evaluacion.dueDate!.toDate().toString().substring(0, 10) : ''}',
                 )
               : null,
           trailing: Checkbox(

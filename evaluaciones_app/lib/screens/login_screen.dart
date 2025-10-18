@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/evaluaciones_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -8,13 +9,16 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
+// pantalla de login
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _errorMessage; // Para mostrar errores de auth
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
+// inicialización del estado
   @override
   void initState() {
     super.initState();
@@ -36,17 +40,48 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  void _login() {
+// función de login
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      _animationController.reverse().then((_) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const EvaluacionesScreen()),
+      try {
+        // inicio de sesión con Firebase Auth
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
-      });
+        _animationController.reverse().then((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const EvaluacionesScreen()),
+          );
+        });
+      } on FirebaseAuthException catch (e) {
+        // manejo de errores
+        String errorMessage = 'Ocurrió un error desconocido. Intenta nuevamente.';
+        switch (e.code) {
+          case 'invalid-credential':
+          case 'user-not-found':
+          case 'wrong-password':
+            errorMessage = 'Las credenciales proporcionadas son incorrectas, mal formadas o han expirado.';
+            break;
+          case 'user-disabled':
+            errorMessage = 'La cuenta ha sido deshabilitada.';
+            break;
+          case 'invalid-email':
+            errorMessage = 'El correo electrónico proporcionado es inválido.';
+            break;
+          case 'too-many-requests':
+            errorMessage = 'Demasiados intentos. Intenta de nuevo más tarde.';
+            break;
+        }
+        setState(() {
+          _errorMessage = errorMessage;
+        });
+      }
     }
   }
 
+  // construcción de la interfaz
   @override
   Widget build(BuildContext context) {
     final bool isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -57,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         title: FadeTransition(
           opacity: _fadeAnimation,
           child: const Text(
-            'Evaluaciones',
+            'Login',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 24,
@@ -66,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
         centerTitle: true,
         leading: const Icon(Icons.person, color: Colors.white),
-        backgroundColor: Colors.red, // Rojo INACAP
+        backgroundColor: Colors.red,
       ),
       body: Stack(
         children: [
@@ -82,9 +117,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     padding: const EdgeInsets.only(bottom: 20.0, top: 20.0),
                     child: Image.asset(
                       'assets/logo2.png',
-                      height: 120,
+                      height: 80,
                       width: double.infinity,
                       fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error cargando logo: $error');
+                        return const Text('Logo no disponible');
+                      },
                     ),
                   ),
                 ),
@@ -134,6 +173,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             return null;
                           },
                         ),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ),
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: _login,
@@ -157,17 +204,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
           Align(
+            //footer
             alignment: Alignment.bottomCenter,
             child: Container(
               padding: const EdgeInsets.all(8.0),
-              color: Colors.white, // Fondo blanco
+              color: Colors.white,
               width: double.infinity,
               child: const Text(
                 'Inacap 2025',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black, // Texto negro
+                  color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),

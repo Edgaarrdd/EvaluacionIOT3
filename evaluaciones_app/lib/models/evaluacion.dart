@@ -1,10 +1,13 @@
-// Modelo de datos para una evaluación
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// modelo de datos para una evaluación
 class Evaluacion {
-  final int id;
+  final String id;
   String title;
   String? notes;
-  DateTime? dueDate;
+  Timestamp? dueDate;
   bool isDone;
+  final String userId;
 
   Evaluacion({
     required this.id,
@@ -12,37 +15,66 @@ class Evaluacion {
     this.notes,
     this.dueDate,
     this.isDone = false,
+    required this.userId,
   });
+// crear una evaluación a partir de datos de Firestore
+  factory Evaluacion.fromFirestore(Map<String, dynamic> data, String documentId) {
+    return Evaluacion(
+      id: documentId,
+      title: data['title'] as String,
+      notes: data['notes'] as String?,
+      dueDate: data['dueDate'] as Timestamp?,
+      isDone: data['isDone'] as bool,
+      userId: data['userId'] as String,
+    );
+  }
+// convertir una evaluación a un mapa para Firestore
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'notes': notes,
+      'dueDate': dueDate,
+      'isDone': isDone,
+      'userId': userId,
+    };
+  }
 
-  static List<Evaluacion> getInitialEvaluations() {
+// generar evaluaciones iniciales para un usuario
+  static List<Evaluacion> getInitialEvaluations(String userId) {
+    final now = DateTime.now();
     return [
       Evaluacion(
-        id: 0,
+        id: '',
         title: "Evaluación de Matemáticas",
         notes: "Cálculo diferencial",
-        dueDate: DateTime.now().add(const Duration(days: 5)),
+        dueDate: Timestamp.fromDate(now.add(const Duration(days: 5))),
+        userId: userId,
       ),
       Evaluacion(
-        id: 1,
+        id: '',
         title: "Proyecto de Programación",
         notes: "App móvil",
-        dueDate: DateTime.now().add(const Duration(days: 2)),
+        dueDate: Timestamp.fromDate(now.add(const Duration(days: 2))),
+        userId: userId,
       ),
       Evaluacion(
-        id: 2,
+        id: '',
         title: "Examen de Física",
-        dueDate: DateTime.now().subtract(const Duration(days: 1)),
+        dueDate: Timestamp.fromDate(now.subtract(const Duration(days: 1))),
         isDone: true,
+        userId: userId,
       ),
       Evaluacion(
-        id: 3,
+        id: '',
         title: "Tarea de Química",
-        dueDate: DateTime.now().subtract(const Duration(days: 3)),
+        dueDate: Timestamp.fromDate(now.subtract(const Duration(days: 3))),
+        userId: userId,
       ),
       Evaluacion(
-        id: 4,
+        id: '',
         title: "Ensayo de Literatura",
-        dueDate: DateTime.now().add(const Duration(days: 10)),
+        dueDate: Timestamp.fromDate(now.add(const Duration(days: 10))),
+        userId: userId,
       ),
     ];
   }

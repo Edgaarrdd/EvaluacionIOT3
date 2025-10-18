@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/enums.dart'; // Importa el enum desde aquí
 
-enum FilterType {
-  all,
-  pending,
-  completed
-}
-
-// Widget para los chips de filtro con animaciones
 class FiltrosChips extends StatelessWidget {
   final FilterType currentFilter;
   final void Function(FilterType) onFilterSelected;
@@ -16,24 +10,32 @@ class FiltrosChips extends StatelessWidget {
     required this.currentFilter,
     required this.onFilterSelected,
   });
-// Construir el widget con animaciones
+// filtros como chips seleccionables
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Wrap(
-        spacing: 8.0,
-        children: FilterType.values.map((filter) {
-          return ChoiceChip(
-            label: Text(filter.name.toUpperCase()),
-            selected: currentFilter == filter,
-            onSelected: (selected) {
-              if (selected) {
-                onFilterSelected(filter);
-              }
-            },
-          );
-        }).toList(),
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('Todas'),
+            selected: currentFilter == FilterType.all,
+            onSelected: (_) => onFilterSelected(FilterType.all),
+          ),
+          const SizedBox(width: 8),
+          FilterChip(
+            label: const Text('Pendientes'),
+            selected: currentFilter == FilterType.pending,
+            onSelected: (_) => onFilterSelected(FilterType.pending),
+          ),
+          const SizedBox(width: 8),
+          FilterChip(
+            label: const Text('Completas'),
+            selected: currentFilter == FilterType.completed,
+            onSelected: (_) => onFilterSelected(FilterType.completed),
+          ),
+        ],
       ),
     );
   }
