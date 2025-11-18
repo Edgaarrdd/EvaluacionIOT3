@@ -127,12 +127,6 @@ lib/
 
 ---
 
-## 🖼️ Capturas (opcional)
-
-_(Agrega aquí imágenes o GIFs mostrando el flujo de login, creación y listado de evaluaciones.)_
-
----
-
 ## 📋 Instrucciones de ejecución
 
 1. Clonar el repositorio:
